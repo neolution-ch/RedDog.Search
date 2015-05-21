@@ -19,9 +19,10 @@ namespace RedDog.Search.Http
 
         private readonly JsonMediaTypeFormatter _formatter;
 
-        internal ApiConnection(Uri baseUri, string apiKey, HttpClientHandler handler)
+        internal ApiConnection(Uri baseUri, string apiKey, string apiVersion, HttpClientHandler handler)
         {
             BaseUri = baseUri;
+            ApiVersion = apiVersion ?? ApiConstants.Version;
 
             _client = new HttpClient(handler) { BaseAddress = BaseUri };
             _client.DefaultRequestHeaders.Add("api-key", apiKey);
@@ -40,16 +41,22 @@ namespace RedDog.Search.Http
             private set;
         }
 
-        public static ApiConnection Create(Uri baseUri, string apiKey, IWebProxy proxy = null)
+        public string ApiVersion
         {
-            var handler = new HttpClientHandler() { Proxy = proxy };
-            return new ApiConnection(baseUri, apiKey, handler);
+            get; 
+            private set;
         }
 
-        public static ApiConnection Create(string serviceName, string apiKey, IWebProxy proxy = null)
+        public static ApiConnection Create(Uri baseUri, string apiKey, string apiVersion = null, IWebProxy proxy = null)
         {
             var handler = new HttpClientHandler() { Proxy = proxy };
-            return new ApiConnection(new Uri(String.Format(ApiConstants.BaseUrl, serviceName)), apiKey, handler);
+            return new ApiConnection(baseUri, apiKey, apiVersion, handler);
+        }
+
+        public static ApiConnection Create(string serviceName, string apiKey, string apiVersion = null, IWebProxy proxy = null)
+        {
+            var handler = new HttpClientHandler() { Proxy = proxy };
+            return new ApiConnection(new Uri(String.Format(ApiConstants.BaseUrl, serviceName)), apiKey, apiVersion, handler);
         }
 
         /// <summary>
@@ -76,7 +83,7 @@ namespace RedDog.Search.Http
                 .ConfigureAwait(false);
             return response;
         }
-        
+
         /// <summary>
         /// Execute a request which returns a result.
         /// </summary>
@@ -183,7 +190,7 @@ namespace RedDog.Search.Http
             List<string> parameters = request.QueryParameters.Select(
                 p => FormatQueryStringParameter(p.Item1, p.Item2)).ToList();
 
-            parameters.Add(FormatQueryStringParameter("api-version", ApiConstants.Version));
+            parameters.Add(FormatQueryStringParameter("api-version", ApiVersion));
             return url + "?" + String.Join("&", parameters);
         }
 
